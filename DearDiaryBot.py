@@ -19,7 +19,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # message saving
-text=[]
+text={}
 
 
 
@@ -36,7 +36,10 @@ def help(bot, update):
 
 def echo(bot, update):
 	global text
-	text.append( {"msg": update.message.text, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "t": time.time() })
+	user = update.message.chat.id
+	if user not in text:
+		text[ user ] = []
+	text[user].append( {"msg": update.message.text, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "t": time.time() })
 	#update.message.reply_text(update.message.text)
 
 
@@ -86,7 +89,11 @@ def unset(bot, update, chat_data):
 
 def backup(bot, update):
 	out = ""
-	for line in text:
+	user = update.message.chat.id
+	if user not in text:
+		text[ user ] = []
+		
+	for line in text[ user ]:
 		out +=line["time"] + "    " + line["msg"] + "\r\n"
 		
 	#doc = telegram.InputFile( {"document": StringIO.StringIO( out ), "filename": "backup.txt"} )
@@ -102,13 +109,16 @@ def randomm(bot, update):
 	
 	#out = random.choice( text )
 	#update.message.reply_text( out["time"] + "    " + out["msg"] )
-	
-	if len( text )  < 1:
+	user = update.message.chat.id
+	if user not in text:
+		text[ user ] = []
+		
+	if len( text[ user ] )  < 1:
 		update.message.reply_text('No memories found :(')
 		return
 	
 	update.message.reply_text('Random memory:')
-	index = random.randint( 0, len(text) -1 )
+	index = random.randint( 0, len(text[ user ]) -1 )
 	print text[index]["msg"]
 	
 	i = index
@@ -120,7 +130,7 @@ def randomm(bot, update):
 	# to find the first diary marking of that "session" was that
 	# annettu teksti - annettu teksti
 	while (( index + n_s - 1 ) >= 0) and go_forward:
-		if text[index + n_s]["t"] - text[i-1]["t"] < 45*60:
+		if text[ user ][index + n_s]["t"] - text[ user ][i-1]["t"] < 45*60:
 			n_s -= 1
 			i -= 1
 		else:
@@ -129,8 +139,8 @@ def randomm(bot, update):
 	# and last:
 	i = index
 	go_forward = True
-	while (( index + n_e + 1 ) < len(text) ) and go_forward:
-		if text[index + n_e + 1]["t"] - text[i]["t"] < 45*60:
+	while (( index + n_e + 1 ) < len(text[ user ]) ) and go_forward:
+		if text[ user ][index + n_e + 1]["t"] - text[ user ][i]["t"] < 45*60:
 			n_e+=1
 			i+=1
 		else: 
@@ -140,14 +150,19 @@ def randomm(bot, update):
 	print n_e
 	
 	for i in range (( index + n_s ), ( index + n_e +1 )):
-		update.message.reply_text( text[i]["time"] + "    " + text[i]["msg"] )
+		update.message.reply_text( text[ user ][i]["time"] + "    " + text[ user ][i]["msg"] )
 	
 
 def history(bot, update):
-	if len( text ) > 0:
+	user = update.message.chat.id
+	print user
+	if user not in text:
+		text[ user ] = []
+		
+	if len( text[ user ] ) > 0:
 		update.message.reply_text('Your history:')
 		out = ""
-		for line in text:
+		for line in text[ user ]:
 			out +=line["time"] + "    " + line["msg"] + "\n"
 		
 		update.message.reply_text(out)
@@ -157,8 +172,12 @@ def history(bot, update):
 	
 def erase(bot, update):
 	global text
+	user = update.message.chat.id
+	if user not in text:
+		text[ user ] = []
+		
 	#update.message.reply_text('Erasing your history...')
-	text = []
+	text[ user ] = []
 	update.message.reply_text('Erased your history.')
 
 def main():
